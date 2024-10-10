@@ -1,10 +1,17 @@
 from datetime import date, datetime
 from decimal import Decimal
 from enum import Enum
-from typing import Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Union
+
+from pydantic import computed_field, field_serializer, model_validator
 
 from tastytrade import VERSION
-from tastytrade.utils import TastytradeJsonDataclass
+from tastytrade.utils import (
+    PriceEffect,
+    TastytradeJsonDataclass,
+    _get_sign,
+    _set_sign_for,
+)
 
 
 class InstrumentType(str, Enum):
@@ -12,33 +19,35 @@ class InstrumentType(str, Enum):
     This is an :class:`~enum.Enum` that contains the valid types of instruments
     and their representation in the API.
     """
-    BOND = 'Bond'
-    CRYPTOCURRENCY = 'Cryptocurrency'
-    CURRENCY_PAIR = 'Currency Pair'
-    EQUITY = 'Equity'
-    EQUITY_OFFERING = 'Equity Offering'
-    EQUITY_OPTION = 'Equity Option'
-    FIXED_INCOME = 'Fixed Income Security'
-    FUTURE = 'Future'
-    FUTURE_OPTION = 'Future Option'
-    INDEX = 'Index'
-    LIQUIDITY_POOL = 'Liquidity Pool'
-    UNKNOWN = 'Unknown'
-    WARRANT = 'Warrant'
+
+    BOND = "Bond"
+    CRYPTOCURRENCY = "Cryptocurrency"
+    CURRENCY_PAIR = "Currency Pair"
+    EQUITY = "Equity"
+    EQUITY_OFFERING = "Equity Offering"
+    EQUITY_OPTION = "Equity Option"
+    FIXED_INCOME = "Fixed Income Security"
+    FUTURE = "Future"
+    FUTURE_OPTION = "Future Option"
+    INDEX = "Index"
+    LIQUIDITY_POOL = "Liquidity Pool"
+    UNKNOWN = "Unknown"
+    WARRANT = "Warrant"
 
 
 class OrderAction(str, Enum):
     """
     This is an :class:`~enum.Enum` that contains the valid order actions.
     """
-    BUY_TO_OPEN = 'Buy to Open'
-    BUY_TO_CLOSE = 'Buy to Close'
-    SELL_TO_OPEN = 'Sell to Open'
-    SELL_TO_CLOSE = 'Sell to Close'
+
+    BUY_TO_OPEN = "Buy to Open"
+    BUY_TO_CLOSE = "Buy to Close"
+    SELL_TO_OPEN = "Sell to Open"
+    SELL_TO_CLOSE = "Sell to Close"
     #: for futures only
-    BUY = 'Buy'
+    BUY = "Buy"
     #: for futures only
-    SELL = 'Sell'
+    SELL = "Sell"
 
 
 class OrderStatus(str, Enum):
@@ -48,67 +57,62 @@ class OrderStatus(str, Enum):
 
     RECEIVED -> LIVE -> FILLED
     """
-    RECEIVED = 'Received'
-    CANCELLED = 'Cancelled'
-    FILLED = 'Filled'
-    EXPIRED = 'Expired'
-    LIVE = 'Live'
-    REJECTED = 'Rejected'
-    CONTINGENT = 'Contingent'
-    ROUTED = 'Routed'
-    IN_FLIGHT = 'In Flight'
-    CANCEL_REQUESTED = 'Cancel Requested'
-    REPLACE_REQUESTED = 'Replace Requested'
-    REMOVED = 'Removed'
-    PARTIALLY_REMOVED = 'Partially Removed'
+
+    RECEIVED = "Received"
+    CANCELLED = "Cancelled"
+    FILLED = "Filled"
+    EXPIRED = "Expired"
+    LIVE = "Live"
+    REJECTED = "Rejected"
+    CONTINGENT = "Contingent"
+    ROUTED = "Routed"
+    IN_FLIGHT = "In Flight"
+    CANCEL_REQUESTED = "Cancel Requested"
+    REPLACE_REQUESTED = "Replace Requested"
+    REMOVED = "Removed"
+    PARTIALLY_REMOVED = "Partially Removed"
 
 
 class OrderTimeInForce(str, Enum):
     """
     This is an :class:`~enum.Enum` that contains the valid TIFs for orders.
     """
-    DAY = 'Day'
-    GTC = 'GTC'
-    GTD = 'GTD'
-    EXT = 'Ext'
-    GTC_EXT = 'GTC Ext'
-    IOC = 'IOC'
+
+    DAY = "Day"
+    GTC = "GTC"
+    GTD = "GTD"
+    EXT = "Ext"
+    GTC_EXT = "GTC Ext"
+    IOC = "IOC"
 
 
 class OrderType(str, Enum):
     """
     This is an :class:`~enum.Enum` that contains the valid types of orders.
     """
-    LIMIT = 'Limit'
-    MARKET = 'Market'
-    MARKETABLE_LIMIT = 'Marketable Limit'
-    STOP = 'Stop'
-    STOP_LIMIT = 'Stop Limit'
-    NOTIONAL_MARKET = 'Notional Market'
+
+    LIMIT = "Limit"
+    MARKET = "Market"
+    MARKETABLE_LIMIT = "Marketable Limit"
+    STOP = "Stop"
+    STOP_LIMIT = "Stop Limit"
+    NOTIONAL_MARKET = "Notional Market"
 
 
 class ComplexOrderType(str, Enum):
     """
     This is an :class:`~enum.Enum` that contains the valid complex order types.
     """
-    OCO = 'OCO'
-    OTOCO = 'OTOCO'
 
-
-class PriceEffect(str, Enum):
-    """
-    This is an :class:`~enum.Enum` that shows the sign of a price effect, since
-    Tastytrade is apparently against negative numbers.
-    """
-    CREDIT = 'Credit'
-    DEBIT = 'Debit'
-    NONE = 'None'
+    OCO = "OCO"
+    OTOCO = "OTOCO"
 
 
 class FillInfo(TastytradeJsonDataclass):
     """
     Dataclass that contains information about an order fill.
     """
+
     fill_id: str
     quantity: Decimal
     fill_price: Decimal
@@ -125,6 +129,7 @@ class Leg(TastytradeJsonDataclass):
     Classes that inherit from :class:`TradeableTastytradeJsonDataclass` can
     call :meth:`build_leg` to build a leg from the dataclass.
     """
+
     instrument_type: InstrumentType
     symbol: str
     action: OrderAction
@@ -140,6 +145,7 @@ class TradeableTastytradeJsonDataclass(TastytradeJsonDataclass):
     Classes that inherit from this class can call :meth:`build_leg` to build a
     leg from the dataclass.
     """
+
     instrument_type: InstrumentType
     symbol: str
 
@@ -156,7 +162,7 @@ class TradeableTastytradeJsonDataclass(TastytradeJsonDataclass):
             instrument_type=self.instrument_type,
             symbol=self.symbol,
             quantity=quantity,
-            action=action
+            action=action,
         )
 
 
@@ -165,18 +171,20 @@ class Message(TastytradeJsonDataclass):
     Dataclass that represents a message from the Tastytrade API, usually
     a warning or an error.
     """
+
     code: str
     message: str
     preflight_id: Optional[str] = None
 
     def __str__(self):
-        return f'{self.code}: {self.message}'
+        return f"{self.code}: {self.message}"
 
 
 class OrderConditionPriceComponent(TastytradeJsonDataclass):
     """
     Dataclass that represents a price component of an order condition.
     """
+
     symbol: str
     instrument_type: InstrumentType
     quantity: Decimal
@@ -187,6 +195,7 @@ class OrderCondition(TastytradeJsonDataclass):
     """
     Dataclass that represents an order condition for an order rule.
     """
+
     id: str
     action: str
     symbol: str
@@ -204,6 +213,7 @@ class OrderRule(TastytradeJsonDataclass):
     """
     Dataclass that represents an order rule for a complex order.
     """
+
     route_after: datetime
     routed_at: datetime
     cancel_at: datetime
@@ -216,19 +226,35 @@ class NewOrder(TastytradeJsonDataclass):
     Dataclass containing information about a new order. Also used for
     modifying existing orders.
     """
+
     time_in_force: OrderTimeInForce
     order_type: OrderType
-    source: str = f'tastyware/tastytrade:v{VERSION}'
+    source: str = f"tastyware/tastytrade:v{VERSION}"
     legs: List[Leg]
     gtc_date: Optional[date] = None
+    #: For a stop/stop limit order. If the latter, use price for the limit price
     stop_trigger: Optional[Decimal] = None
-    price: Optional[Decimal] = None  # optional for market orders
-    price_effect: Optional[PriceEffect] = None
+    #: The price of the order; negative = debit, positive = credit
+    price: Optional[Decimal] = None
+    #: The actual notional value of the order. Only for notional market orders!
     value: Optional[Decimal] = None
-    value_effect: Optional[PriceEffect] = None
     partition_key: Optional[str] = None
     preflight_id: Optional[str] = None
     rules: Optional[OrderRule] = None
+
+    @computed_field
+    @property
+    def price_effect(self) -> Optional[PriceEffect]:
+        return _get_sign(self.price)
+
+    @computed_field
+    @property
+    def value_effect(self) -> Optional[PriceEffect]:
+        return _get_sign(self.value)
+
+    @field_serializer("price", "value")
+    def serialize_fields(self, field: Optional[Decimal]) -> Optional[Decimal]:
+        return abs(field) if field else None
 
 
 class NewComplexOrder(TastytradeJsonDataclass):
@@ -236,8 +262,9 @@ class NewComplexOrder(TastytradeJsonDataclass):
     Dataclass containing information about a new OTOCO order.
     Also used for modifying existing orders.
     """
+
     orders: List[NewOrder]
-    source: str = f'tastyware/tastytrade:v{VERSION}'
+    source: str = f"tastyware/tastytrade:v{VERSION}"
     trigger_order: Optional[NewOrder] = None
     type: ComplexOrderType = ComplexOrderType.OCO
 
@@ -252,6 +279,7 @@ class PlacedOrder(TastytradeJsonDataclass):
     Dataclass containing information about an existing order, whether it's
     been filled or not.
     """
+
     account_number: str
     time_in_force: OrderTimeInForce
     order_type: OrderType
@@ -266,10 +294,8 @@ class PlacedOrder(TastytradeJsonDataclass):
     size: Optional[Decimal] = None
     id: Optional[int] = None
     price: Optional[Decimal] = None
-    price_effect: Optional[PriceEffect] = None
     gtc_date: Optional[date] = None
     value: Optional[Decimal] = None
-    value_effect: Optional[PriceEffect] = None
     stop_trigger: Optional[str] = None
     contingent_status: Optional[str] = None
     confirmation_status: Optional[str] = None
@@ -290,11 +316,17 @@ class PlacedOrder(TastytradeJsonDataclass):
     preflight_id: Optional[Union[str, int]] = None
     order_rule: Optional[OrderRule] = None
 
+    @model_validator(mode="before")
+    @classmethod
+    def validate_price_effects(cls, data: Any) -> Any:
+        return _set_sign_for(data, ["price", "value"])
+
 
 class PlacedComplexOrder(TastytradeJsonDataclass):
     """
     Dataclass containing information about an already placed complex order.
     """
+
     account_number: str
     type: str
     orders: List[PlacedOrder]
@@ -312,41 +344,62 @@ class BuyingPowerEffect(TastytradeJsonDataclass):
     Dataclass containing information about the effect of a trade on buying
     power.
     """
+
     change_in_margin_requirement: Decimal
-    change_in_margin_requirement_effect: PriceEffect
     change_in_buying_power: Decimal
-    change_in_buying_power_effect: PriceEffect
     current_buying_power: Decimal
-    current_buying_power_effect: PriceEffect
     new_buying_power: Decimal
-    new_buying_power_effect: PriceEffect
     isolated_order_margin_requirement: Decimal
-    isolated_order_margin_requirement_effect: PriceEffect
     is_spread: bool
     impact: Decimal
     effect: PriceEffect
+
+    @model_validator(mode="before")
+    @classmethod
+    def validate_price_effects(cls, data: Any) -> Any:
+        return _set_sign_for(
+            data,
+            [
+                "change_in_margin_requirement",
+                "change_in_buying_power",
+                "current_buying_power",
+                "new_buying_power",
+                "isolated_order_margin_requirement",
+            ],
+        )
 
 
 class FeeCalculation(TastytradeJsonDataclass):
     """
     Dataclass containing information about the fees associated with a trade.
     """
+
     regulatory_fees: Decimal
-    regulatory_fees_effect: PriceEffect
     clearing_fees: Decimal
-    clearing_fees_effect: PriceEffect
     commission: Decimal
-    commission_effect: PriceEffect
     proprietary_index_option_fees: Decimal
-    proprietary_index_option_fees_effect: PriceEffect
     total_fees: Decimal
-    total_fees_effect: PriceEffect
+
+    @model_validator(mode="before")
+    @classmethod
+    def validate_price_effects(cls, data: Any) -> Any:
+        return _set_sign_for(
+            data,
+            [
+                "regulatory_fees",
+                "clearing_fees",
+                "commission",
+                "proprietary_index_option_fees",
+                "total_fees",
+            ],
+        )
 
 
 class PlacedOrderResponse(TastytradeJsonDataclass):
     """
     Dataclass grouping together information about a placed order.
     """
+
     buying_power_effect: BuyingPowerEffect
     fee_calculation: Optional[FeeCalculation] = None
     order: Optional[PlacedOrder] = None
@@ -359,6 +412,7 @@ class OrderChainEntry(TastytradeJsonDataclass):
     """
     Dataclass containing information about a single order in an order chain.
     """
+
     symbol: str
     instrument_type: InstrumentType
     quantity: str
@@ -371,6 +425,7 @@ class OrderChainLeg(TastytradeJsonDataclass):
     Dataclass containing information about a single leg in an order
     from an order chain.
     """
+
     symbol: str
     instrument_type: InstrumentType
     action: OrderAction
@@ -382,37 +437,44 @@ class OrderChainNode(TastytradeJsonDataclass):
     """
     Dataclass containing information about a single node in an order chain.
     """
+
     node_type: str
     id: str
     description: str
     occurred_at: Optional[datetime] = None
     total_fees: Optional[Decimal] = None
-    total_fees_effect: Optional[PriceEffect] = None
     total_fill_cost: Optional[Decimal] = None
-    total_fill_cost_effect: Optional[PriceEffect] = None
     gcd_quantity: Optional[Decimal] = None
     fill_cost_per_quantity: Optional[Decimal] = None
-    fill_cost_per_quantity_effect: Optional[PriceEffect] = None
     order_fill_count: Optional[int] = None
     roll: Optional[bool] = None
     legs: Optional[List[OrderChainLeg]] = None
     entries: Optional[List[OrderChainEntry]] = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def validate_price_effects(cls, data: Any) -> Any:
+        return _set_sign_for(
+            data,
+            [
+                "total_fees",
+                "total_fill_cost",
+                "fill_cost_per_quantity",
+            ],
+        )
 
 
 class ComputedData(TastytradeJsonDataclass):
     """
     Dataclass containing computed data about an order chain.
     """
+
     open: bool
     updated_at: datetime
     total_fees: Decimal
-    total_fees_effect: PriceEffect
     total_commissions: Decimal
-    total_commissions_effect: PriceEffect
     realized_gain: Decimal
-    realized_gain_effect: PriceEffect
     realized_gain_with_fees: Decimal
-    realized_gain_with_fees_effect: PriceEffect
     winner_realized_and_closed: bool
     winner_realized: bool
     winner_realized_with_fees: bool
@@ -422,16 +484,29 @@ class ComputedData(TastytradeJsonDataclass):
     started_at_days_to_expiration: int
     duration: int
     total_opening_cost: Decimal
-    total_opening_cost_effect: PriceEffect
     total_closing_cost: Decimal
-    total_closing_cost_effect: PriceEffect
     total_cost: Decimal
-    total_cost_effect: PriceEffect
     gcd_open_quantity: Decimal
     fees_missing: bool
     open_entries: List[OrderChainEntry]
     total_cost_per_unit: Optional[Decimal] = None
-    total_cost_per_unit_effect: Optional[PriceEffect] = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def validate_price_effects(cls, data: Any) -> Any:
+        return _set_sign_for(
+            data,
+            [
+                "total_fees",
+                "total_commissions",
+                "realized_gain",
+                "realized_gain_with_fees",
+                "total_opening_cost",
+                "total_closing_cost",
+                "total_cost",
+                "total_cost_per_unit",
+            ],
+        )
 
 
 class OrderChain(TastytradeJsonDataclass):
@@ -440,6 +515,7 @@ class OrderChain(TastytradeJsonDataclass):
     for a specific underlying, such as total P/L, rolls, current P/L in a
     symbol, etc.
     """
+
     id: int
     updated_at: datetime
     created_at: datetime

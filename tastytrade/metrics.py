@@ -10,6 +10,7 @@ class DividendInfo(TastytradeJsonDataclass):
     """
     Dataclass representing dividend information for a given symbol.
     """
+
     occurred_date: date
     amount: Decimal
 
@@ -18,6 +19,7 @@ class EarningsInfo(TastytradeJsonDataclass):
     """
     Dataclass representing earnings information for a given symbol.
     """
+
     occurred_date: date
     eps: Decimal
 
@@ -27,6 +29,7 @@ class EarningsReport(TastytradeJsonDataclass):
     Dataclass containing information about a recent earnings report, or the
     expected date of the next one.
     """
+
     estimated: bool
     late_flag: int
     visible: bool
@@ -42,6 +45,7 @@ class Liquidity(TastytradeJsonDataclass):
     """
     Dataclass representing liquidity information for a given symbol.
     """
+
     sum: Decimal
     count: int
     started_at: datetime
@@ -53,6 +57,7 @@ class OptionExpirationImpliedVolatility(TastytradeJsonDataclass):
     Dataclass containing implied volatility information for a given symbol
     and expiration date.
     """
+
     expiration_date: date
     settlement_type: str
     option_chain_type: str
@@ -65,6 +70,7 @@ class MarketMetricInfo(TastytradeJsonDataclass):
 
     Contains lots of useful information, like IV rank, IV percentile and beta.
     """
+
     symbol: str
     implied_volatility_index: Optional[Decimal] = None
     implied_volatility_index_5_day_change: Optional[Decimal] = None
@@ -77,7 +83,9 @@ class MarketMetricInfo(TastytradeJsonDataclass):
     implied_volatility_updated_at: Optional[datetime] = None
     liquidity_rating: Optional[int] = None
     updated_at: datetime
-    option_expiration_implied_volatilities: Optional[List[OptionExpirationImpliedVolatility]] = None  # noqa: E501
+    option_expiration_implied_volatilities: Optional[
+        List[OptionExpirationImpliedVolatility]
+    ] = None  # noqa: E501
     beta: Optional[Decimal] = None
     corr_spy_3month: Optional[Decimal] = None
     market_cap: Decimal
@@ -105,9 +113,8 @@ class MarketMetricInfo(TastytradeJsonDataclass):
     borrow_rate: Optional[Decimal] = None
 
 
-def get_market_metrics(
-    session: Session,
-    symbols: List[str]
+async def a_get_market_metrics(
+    session: Session, symbols: List[str]
 ) -> List[MarketMetricInfo]:
     """
     Retrieves market metrics for the given symbols.
@@ -115,33 +122,53 @@ def get_market_metrics(
     :param session: active user session to use
     :param symbols: list of symbols to retrieve metrics for
     """
-    data = session.get(
-        '/market-metrics',
-        params={'symbols': ','.join(symbols)}
+    data = await session._a_get(
+        "/market-metrics", params={"symbols": ",".join(symbols)}
     )
-    return [MarketMetricInfo(**i) for i in data['items']]
+    return [MarketMetricInfo(**i) for i in data["items"]]
 
 
-def get_dividends(
-    session: Session,
-    symbol: str
-) -> List[DividendInfo]:
+def get_market_metrics(session: Session, symbols: List[str]) -> List[MarketMetricInfo]:
+    """
+    Retrieves market metrics for the given symbols.
+
+    :param session: active user session to use
+    :param symbols: list of symbols to retrieve metrics for
+    """
+    data = session._get("/market-metrics", params={"symbols": ",".join(symbols)})
+    return [MarketMetricInfo(**i) for i in data["items"]]
+
+
+async def a_get_dividends(session: Session, symbol: str) -> List[DividendInfo]:
     """
     Retrieves dividend information for the given symbol.
 
     :param session: active user session to use
     :param symbol: symbol to retrieve dividend information for
     """
-    symbol = symbol.replace('/', '%2F')
-    data = session.get(f'/market-metrics/historic-corporate-events/'
-                       f'dividends/{symbol}')
-    return [DividendInfo(**i) for i in data['items']]
+    symbol = symbol.replace("/", "%2F")
+    data = await session._a_get(
+        f"/market-metrics/historic-corporate-events/" f"dividends/{symbol}"
+    )
+    return [DividendInfo(**i) for i in data["items"]]
 
 
-def get_earnings(
-    session: Session,
-    symbol: str,
-    start_date: date
+def get_dividends(session: Session, symbol: str) -> List[DividendInfo]:
+    """
+    Retrieves dividend information for the given symbol.
+
+    :param session: active user session to use
+    :param symbol: symbol to retrieve dividend information for
+    """
+    symbol = symbol.replace("/", "%2F")
+    data = session._get(
+        f"/market-metrics/historic-corporate-events/" f"dividends/{symbol}"
+    )
+    return [DividendInfo(**i) for i in data["items"]]
+
+
+async def a_get_earnings(
+    session: Session, symbol: str, start_date: date
 ) -> List[EarningsInfo]:
     """
     Retrieves earnings information for the given symbol.
@@ -150,14 +177,40 @@ def get_earnings(
     :param symbol: symbol to retrieve earnings information for
     :param start_date: limits earnings to those on or after the given date
     """
-    symbol = symbol.replace('/', '%2F')
-    params = {'start-date': start_date}
-    data = session.get(
-        (f'/market-metrics/historic-corporate-events/'
-         f'earnings-reports/{symbol}'),
-        params=params
+    symbol = symbol.replace("/", "%2F")
+    params = {"start-date": start_date}
+    data = await session._a_get(
+        (f"/market-metrics/historic-corporate-events/" f"earnings-reports/{symbol}"),
+        params=params,
     )
-    return [EarningsInfo(**i) for i in data['items']]
+    return [EarningsInfo(**i) for i in data["items"]]
+
+
+def get_earnings(session: Session, symbol: str, start_date: date) -> List[EarningsInfo]:
+    """
+    Retrieves earnings information for the given symbol.
+
+    :param session: active user session to use
+    :param symbol: symbol to retrieve earnings information for
+    :param start_date: limits earnings to those on or after the given date
+    """
+    symbol = symbol.replace("/", "%2F")
+    params = {"start-date": start_date}
+    data = session._get(
+        (f"/market-metrics/historic-corporate-events/" f"earnings-reports/{symbol}"),
+        params=params,
+    )
+    return [EarningsInfo(**i) for i in data["items"]]
+
+
+async def a_get_risk_free_rate(session: Session) -> Decimal:
+    """
+    Retrieves the current risk-free rate.
+
+    :param session: active user session to use
+    """
+    data = await session._a_get("/margin-requirements-public-configuration")
+    return Decimal(data["risk-free-rate"])
 
 
 def get_risk_free_rate(session: Session) -> Decimal:
@@ -166,5 +219,5 @@ def get_risk_free_rate(session: Session) -> Decimal:
 
     :param session: active user session to use
     """
-    data = session.get('/margin-requirements-public-configuration')
-    return Decimal(data['risk-free-rate'])
+    data = session._get("/margin-requirements-public-configuration")
+    return Decimal(data["risk-free-rate"])

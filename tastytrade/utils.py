@@ -1,12 +1,26 @@
 from datetime import date, datetime, timedelta
+from decimal import Decimal
+from enum import Enum
+from typing import Any, List, Optional
 
 import pandas_market_calendars as mcal  # type: ignore
 import pytz
+from httpx._models import Response
 from pydantic import BaseModel
-from requests import Response
 
-NYSE = mcal.get_calendar('NYSE')
-TZ = pytz.timezone('US/Eastern')
+NYSE = mcal.get_calendar("NYSE")
+TZ = pytz.timezone("US/Eastern")
+
+
+class PriceEffect(str, Enum):
+    """
+    This is an :class:`~enum.Enum` that shows the sign of a price effect, since
+    Tastytrade is apparently against negative numbers.
+    """
+
+    CREDIT = "Credit"
+    DEBIT = "Debit"
+    NONE = "None"
 
 
 def now_in_new_york() -> datetime:
@@ -182,6 +196,7 @@ class TastytradeError(Exception):
     """
     An internal error raised by the Tastytrade API.
     """
+
     pass
 
 
@@ -193,7 +208,7 @@ def _dasherize(s: str) -> str:
 
     :return: dasherized string
     """
-    return s.replace('_', '-')
+    return s.replace("_", "-")
 
 
 class TastytradeJsonDataclass(BaseModel):
@@ -201,6 +216,7 @@ class TastytradeJsonDataclass(BaseModel):
     A pydantic dataclass that converts keys from snake case to dasherized
     and performs type validation and coercion.
     """
+
     class Config:
         alias_generator = _dasherize
         populate_by_name = True
@@ -213,9 +229,9 @@ def validate_response(response: Response) -> None:
     :param response: response to check for errors
     """
     if response.status_code // 100 != 2:
-        content = response.json()['error']
+        content = response.json()["error"]
         error_message = f"{content['code']}: {content['message']}"
-        errors = content.get('errors')
+        errors = content.get("errors")
         if errors is not None:
             for error in errors:
                 if "code" in error:
@@ -224,3 +240,25 @@ def validate_response(response: Response) -> None:
                     error_message += f"\n{error['domain']}: {error['reason']}"
 
         raise TastytradeError(error_message)
+
+
+def _get_sign(value: Optional[Decimal]) -> Optional[PriceEffect]:
+    if not value:
+        return None
+    return PriceEffect.DEBIT if value < 0 else PriceEffect.CREDIT
+
+
+def _set_sign_for(data: Any, properties: List[str]) -> Any:
+    """
+    Handles setting the sign of a number using the associated "-effect" field.
+
+    :param data: the raw, unprocessed model object
+    :param properties: the name of the number fields to set
+    """
+    if isinstance(data, dict):
+        for property in properties:
+            key = _dasherize(property)
+            effect = data.get(f"{key}-effect")
+            if effect == PriceEffect.DEBIT:
+                data[key] = -abs(Decimal(data[key]))
+    return data

@@ -11,26 +11,24 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
-    - name: Set up Python 3.12
+    - name: Set up Python 3.8
       uses: actions/setup-python@v4
       with:
-        python-version: '3.12'
+        python-version: '3.8'
     - uses: yezz123/setup-uv@v4
     - name: Setup uv venv
       run: |
         uv sync
-        uv pip install .
     - name: Lint with ruff
       run: |
-        uv run ruff check tastytrade/
-        uv run ruff check tests/
-    - name: Type check with mypy
+        uv run ruff check tastytrade/ tests/
+    - name: Type check with pyright
       run: |
-        uv run mypy -p tastytrade
-        uv run mypy -p tests
+        uv run pyright tastytrade/ tests/
     - name: Test with pytest
       run: |
         uv run pytest --cov=tastytrade --cov-report=term-missing tests/ --cov-fail-under=95
       env:
         TT_USERNAME: ${{ secrets.TT_USERNAME }}
         TT_PASSWORD: ${{ secrets.TT_PASSWORD }}
+        TT_ACCOUNT: ${{ secrets.TT_ACCOUNT }}
