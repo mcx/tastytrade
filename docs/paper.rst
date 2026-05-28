@@ -19,7 +19,7 @@ If you've made significant contributions to the SDK, please reach out to `suppor
 
 .. note::
 
-   The paper API is still in beta. If you run into any issues or questions, reach out via `Matrix <https://matrix.to/#/!PxsVtmffaZAheSDHyX:gitter.im?via=gitter.im>`_!
+   The paper API is still in beta. If you run into any issues or questions, reach out to `support <mailto:support@tastyware.dev>`_.
 
 Creating a tastyware API key
 ----------------------------
@@ -48,10 +48,6 @@ These session objects can be used to make API requests to most **account-related
    from tastytrade import Account
 
    accounts = await Account.get(paper)
-
-.. info::
-
-   Paper API endpoints have a default rate limit of 5 requests/second. If you need a higher limit or have a unique use case, please reach out to `support <mailto:support@tastyware.dev>`_.
 
 :class:`~tastytrade.paper.PaperSession` contains a few helper functions for managing paper accounts:
 

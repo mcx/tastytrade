@@ -14,10 +14,6 @@
    :target: https://github.com/tastyware/tastytrade/releases
    :alt: Release
 
-.. image:: https://img.shields.io/gitter/room/:user/tastyware
-   :target: https://matrix.to/#/#tastyware:gitter.im
-   :alt: Gitter
-
 Tastytrade Python SDK
 =====================
 

@@ -2,7 +2,6 @@
 [![PyPI](https://img.shields.io/pypi/v/tastytrade)](https://pypi.org/project/tastytrade)
 [![Downloads](https://static.pepy.tech/badge/tastytrade)](https://pepy.tech/project/tastytrade)
 [![Release)](https://img.shields.io/github/v/release/tastyware/tastytrade?label=release%20notes)](https://github.com/tastyware/tastytrade/releases)
-[![Gitter](https://img.shields.io/gitter/room/:user/tastyware)](https://matrix.to/#/#tastyware:gitter.im)
 
 # Tastytrade Python SDK
 
@@ -20,9 +19,6 @@ A simple, reverse-engineered SDK for Tastytrade built on their (now mostly publi
 
 > [!TIP]
 > Want to see the SDK in action? Check out [tastytrade-cli](https://github.com/tastyware/tastytrade-cli), a CLI for Tastytrade that showcases many of the SDK's features.
-
-> [!NOTE]
-> Want to build an advanced trading system? Check out [streaQ](https://github.com/tastyware/streaq), an async job queuing library for Python that's perfect for complex applications!
 
 ## Installation
 
