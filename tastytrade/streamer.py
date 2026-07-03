@@ -1,14 +1,12 @@
 from __future__ import annotations
 
 import math
-import warnings
 from collections import defaultdict
 from collections.abc import AsyncGenerator, AsyncIterator, Iterable
 from contextlib import asynccontextmanager
 from datetime import date, datetime
 from decimal import Decimal
 from enum import StrEnum
-from ssl import SSLContext, create_default_context
 from typing import Any, Self, TypeAlias, TypedDict, TypeVar, cast
 
 from anyio import (
@@ -333,7 +331,6 @@ class DXLinkStreamer(AsyncContextManagerMixin):
         "_channels_reversed",
         "_recv",
         "_send",
-        "_ssl_context",
         "_subscription_state",
         "_websocket",
         "_wss_url",
@@ -341,7 +338,7 @@ class DXLinkStreamer(AsyncContextManagerMixin):
     )
     _websocket: AsyncWebSocketSession
 
-    def __init__(self, session: Session, ssl_context: SSLContext | None = None):
+    def __init__(self, session: Session):
         # initialize streams
         self._send: dict[str, MemoryObjectSendStream[Event]] = {}
         self._recv: dict[type[Event], MemoryObjectReceiveStream[Event]] = {}
@@ -359,16 +356,6 @@ class DXLinkStreamer(AsyncContextManagerMixin):
         }
         # mapping of channel -> subscribed event
         self._subscription_state: dict[str, AnyioEvent] = {}
-        # TODO: remove this in next breaking release
-        if ssl_context:
-            warnings.warn(
-                "The 'ssl_context' parameter is deprecated and will be removed in a "
-                "future version. Pass the `verify` parameter to `Session` instead:"
-                "https://tastyworks-api.rtfd.io/en/latest/api/session.html#tastytrade.session.Session.__init__.client_kwargs",
-                DeprecationWarning,
-                stacklevel=2,
-            )
-        self._ssl_context = ssl_context or create_default_context()
 
     @asynccontextmanager
     async def __asynccontextmanager__(self) -> AsyncGenerator[Self]:
@@ -376,9 +363,7 @@ class DXLinkStreamer(AsyncContextManagerMixin):
         data = await self.session._get("/api-quote-tokens")
         self._wss_url = data["dxlink-url"]
         self._auth_token = data["token"]
-        async with AsyncClient(
-            verify=self._ssl_context, **self.session.client_kwargs
-        ) as client:
+        async with AsyncClient(**self.session.client_kwargs) as client:
             try:
                 # default keepalive doesn't work since TT expects a specific format
                 async with aconnect_ws(
