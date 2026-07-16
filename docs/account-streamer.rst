@@ -14,10 +14,11 @@ Here's an example of setting up an account streamer to continuously wait for eve
     from tastytrade import Account, AlertStreamer, Watchlist
 
     async with AlertStreamer(session) as streamer:
+        # this is required before other kinds of subscriptions
+        accounts = await Account.get(session)
+        await streamer.subscribe_accounts(accounts)
         # changes in public watchlists
         await streamer.subscribe_public_watchlists()
-        # quote alerts configured by the user
-        await streamer.subscribe_quote_alerts()
 
         async for wl in streamer.listen(Watchlist):
             print(wl)
