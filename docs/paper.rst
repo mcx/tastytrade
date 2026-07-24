@@ -19,7 +19,7 @@ If you've made significant contributions to the SDK, please reach out to `suppor
 
 .. note::
 
-   The paper API is still in beta. If you run into any issues or questions, reach out to `support <mailto:support@tastyware.dev>`_.
+   The paper API is still in beta. If you run into any issues, have questions, or want to propose a feature, you can open an issue `here <https://github.com/tastyware/paper/issues>`_.
 
 Creating a tastyware API key
 ----------------------------
@@ -95,20 +95,20 @@ Here's an example of how one might combine a normal and a paper session to simul
 Using the paper account streamer
 --------------------------------
 
-The :class:`~tastytrade.streamer.AlertStreamer` class is very important in most production apps for tracking whether orders have been filled or not. Fortunately the paper API provides a similar streamer that can be used with minimal code changes:
+The :class:`~tastytrade.streamer.AlertStreamer` class is used in many production apps for tracking whether orders have been filled or not. The paper API mocks the streamer interface, which can be used with zero code changes:
 
 .. code-block:: python
 
-   from tastytrade.paper import PaperAlertStreamer
+   from tastytrade import AlertStreamer
 
-   async with PaperAlertStreamer(paper) as streamer:
+   async with AlertStreamer(paper) as streamer:
        await streamer.subscribe_accounts([acc])
        async for msg in streamer.listen(PlacedOrder):
            print(msg)
 
 .. note::
 
-   :class:`~tastytrade.paper.PaperAlertStreamer` only supports listening to order notifications at this time.
+   The paper alert streamer only supports listening to order/complex order notifications at this time.
 
 Controlling order fills
 -----------------------
