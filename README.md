@@ -20,10 +20,16 @@ A simple, asynchronous SDK for Tastytrade's public API. This will allow you to c
 > [!TIP]
 > Want to see the SDK in action? Check out [tastytrade-cli](https://github.com/tastyware/tastytrade-cli), a CLI for Tastytrade that showcases many of the SDK's features.
 
-## Installation
+## Getting started
 
+You can install via pip/uv:
 ```console
 $ pip install tastytrade
+```
+
+You can also spin up a new project template with agent integration, helpful utilities and documentation:
+```console
+$ uvx --from tastytrade-cli bootstrap my_project
 ```
 
 ## Creating a session
